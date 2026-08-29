@@ -1,5 +1,15 @@
 import sys
 import os
+
+# In a windowed (console=False) PyInstaller build, sys.stdout/stderr are None.
+# Several OCR-related libraries (tqdm, onnxruntime, opencv) write to them
+# unconditionally during import or model loading and crash the whole process
+# if they're missing. Give them a harmless sink before anything else imports.
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
+
 import threading
 import base64
 import webview

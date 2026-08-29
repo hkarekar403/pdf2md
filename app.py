@@ -30,13 +30,13 @@ def get_default_md_path(pdf_filename):
     return os.path.join(OUTPUT_FOLDER, f"{base}.md")
 
 
-def convert_job(job_id, pdf_path, md_path):
+def convert_job(job_id, pdf_path, md_path, enable_ocr=False):
     for f in jobs[job_id]["files"]:
         if f["pdf_path"] == pdf_path:
             f["status"] = "converting"
             break
     try:
-        md = convert_pdf_to_md(pdf_path)
+        md = convert_pdf_to_md(pdf_path, enable_ocr=enable_ocr)
         with open(md_path, "w", encoding="utf-8") as f:
             f.write(md)
         for f in jobs[job_id]["files"]:
@@ -63,6 +63,8 @@ def upload():
     if not files:
         return jsonify({"error": "No files uploaded"}), 400
 
+    enable_ocr = request.form.get("enable_ocr", "false").lower() == "true"
+
     job_id = str(uuid.uuid4())
     jobs[job_id] = {"files": [], "status": "pending", "progress": 0}
 
@@ -86,7 +88,11 @@ def upload():
             })
 
     for file_info in jobs[job_id]["files"]:
-        thread = threading.Thread(target=convert_job, args=(job_id, file_info["pdf_path"], file_info["md_path"]))
+        thread = threading.Thread(
+            target=convert_job,
+            args=(job_id, file_info["pdf_path"], file_info["md_path"]),
+            kwargs={"enable_ocr": enable_ocr},
+        )
         thread.start()
     return jsonify({"job_id": job_id})
 

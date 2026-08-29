@@ -6,12 +6,15 @@ from PyInstaller.utils.hooks import collect_all
 block_cipher = None
 
 datas = []
+binaries = []
 hiddenimports = []
 
-# Collect Flask templates and static files
-for module in ['flask', 'werkzeug', 'jinja2', 'markupsafe']:
+# Collect Flask templates/static files, and RapidOCR's bundled ONNX models +
+# its onnxruntime/opencv native dependencies.
+for module in ['flask', 'werkzeug', 'jinja2', 'markupsafe', 'rapidocr_onnxruntime', 'onnxruntime', 'cv2']:
     mod_data, mod_bin, mod_hidden = collect_all(module)
     datas.extend(mod_data)
+    binaries.extend(mod_bin)
     hiddenimports.extend(mod_hidden)
 
 # Add templates and converter
@@ -23,7 +26,7 @@ datas.extend([
 a = Analysis(
     ['desktop.py'],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
@@ -57,5 +60,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,
+    icon='assets/icon.ico',
 )

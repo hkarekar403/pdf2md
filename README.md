@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platform">
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20(macOS%20pending)-lightgrey" alt="Platform">
 </p>
 
 A cross-platform desktop application that converts PDF files to clean Markdown. Built with a restrained, two-theme UI, drag-and-drop support, and native OS file dialogs for a seamless user experience.
@@ -31,10 +31,12 @@ A cross-platform desktop application that converts PDF files to clean Markdown. 
 - 📄 **Drag & Drop Upload** — Intuitive file upload with visual feedback
 - ⚡ **Batch Conversion** — Convert multiple PDFs simultaneously with real-time progress tracking
 - 🌗 **Warm / Dark Themes** — Two considered themes, switchable in-app and remembered across launches
+- 🔍 **Optional OCR** — On-device text recognition for scanned pages with no text layer, so they don't convert to nothing (see [OCR Support](#ocr-support))
+- 🖼️ **Visible Image Markers** — Images that can't be represented in Markdown are marked in the output instead of silently disappearing
 - 🔁 **Smart Deduplication** — Prevents duplicate file uploads in the queue
 - 💾 **Native Save Dialog** — Choose any folder to save your Markdown files (falls back to a normal browser download outside the desktop shell)
 - 🚪 **Exit Confirmation** — Confirms before closing so you don't lose an in-progress queue
-- 🖥️ **Cross-Platform** — Native desktop app for Windows, macOS, and Linux
+- 🖥️ **Cross-Platform** — Windows and Linux are built and tested; macOS is expected to work via the same pywebview/PyInstaller path but is untested (see [Platform Support](#platform-specific-notes))
 - 📦 **Standalone Executable** — Package as a single distributable binary
 
 ## Quick Start
@@ -85,26 +87,23 @@ The executable will be generated in the `dist/` folder:
 
 ### Platform-Specific Notes
 
-#### Windows
+#### Windows — built & tested
 ```bash
 pyinstaller pdf2md.spec
 ```
-Distribute `dist/PDF2MD.exe`. No additional dependencies needed.
+Distribute `dist/PDF2MD.exe`. No additional dependencies needed. This is the platform this app is actually developed and tested against.
 
-#### macOS
+#### Linux — built via the same spec, testing welcome
 ```bash
 pyinstaller pdf2md.spec
 ```
-For distribution outside your machine, you may need to:
-1. Code-sign the application
-2. Notarize with Apple
-3. Create a proper `.app` bundle structure
+The binary should work on most modern Linux distributions. For broader compatibility, consider building on an older distro (e.g., Ubuntu 20.04) using Docker or a VM. The OCR path in particular (RapidOCR/onnxruntime/opencv) hasn't been verified on Linux yet — if you build it there, an issue report either way (works / doesn't) is welcome.
 
-#### Linux
+#### macOS — pending, untested
 ```bash
 pyinstaller pdf2md.spec
 ```
-The binary should work on most modern Linux distributions. For broader compatibility, consider building on an older distro (e.g., Ubuntu 20.04) using Docker or a VM.
+Nothing in the code is Windows-specific, and pywebview/PyInstaller both support macOS, but this hasn't been built or run on macOS at all. Treat it as unverified until someone does. For distribution outside your own machine, you'll likely also need to code-sign, notarize with Apple, and produce a proper `.app` bundle — none of which this repo currently automates.
 
 ## Usage
 
@@ -119,12 +118,13 @@ The binary should work on most modern Linux distributions. For broader compatibi
 ```
 pdf2md/
 ├── app.py                 # Flask backend (upload, conversion, download API)
-├── converter.py           # PDF to Markdown conversion logic (PyMuPDF)
+├── converter.py           # PDF to Markdown conversion logic (PyMuPDF + optional RapidOCR)
 ├── desktop.py             # Desktop app entry point (PyWebView wrapper)
 ├── pdf2md.spec            # PyInstaller build configuration
 ├── requirements.txt       # Python dependencies
 ├── templates/
 │   └── index.html         # Warm / Dark themed UI
+├── assets/                # App icon (.ico / .png)
 ├── screenshots/           # README screenshots
 ├── uploads/               # Temporary PDF uploads (auto-created)
 ├── outputs/               # Converted Markdown files (auto-created)
@@ -137,6 +137,7 @@ pdf2md/
 |-----------|-----------|
 | **Backend** | Flask 3.0+ |
 | **PDF Processing** | PyMuPDF 1.28+ |
+| **OCR (optional)** | RapidOCR (ONNX Runtime) + OpenCV |
 | **Desktop Wrapper** | PyWebView 5.0+ |
 | **Packaging** | PyInstaller 6.0+ |
 | **Frontend** | HTML5, CSS3 (custom properties, animations), vanilla JavaScript |
@@ -156,6 +157,19 @@ The actual conversion happens in the `outputs/` folder, but when you click **Dow
 
 - **Client-side:** Duplicate filenames in the queue are blocked with an error toast
 - **Server-side:** If multiple files share the same name, outputs are auto-incremented: `file.md`, `file_1.md`, `file_2.md`
+
+## OCR Support
+
+PyMuPDF only extracts text that already exists in the PDF's text layer. A scanned document — a page that's really just a photo of text, with no underlying text layer — has none, so by default it converts to nothing.
+
+Check **"OCR scanned pages"** before converting to fix that. When enabled, any page with images but *no* extractable text is rendered to an image and run through [RapidOCR](https://github.com/RapidAI/RapidOCR) (ONNX Runtime, on-device — no cloud, no API key, nothing leaves your machine). Pages that already have real text are left alone; embedded images that appear alongside real text are marked as `*[image]*` in the output rather than silently dropped, whether or not OCR is on.
+
+Trade-offs worth knowing before you flip it on:
+
+- **Slower.** OCR runs a few seconds per page, versus near-instant for normal text extraction. A large scanned PDF will take noticeably longer to convert.
+- **Lower fidelity than real text.** OCR output is a best-effort transcription — expect occasional misreads, and no attempt to preserve tables, multi-column layout, or headings from a scanned page.
+- **Bigger install / build.** `rapidocr-onnxruntime` pulls in `onnxruntime` and `opencv-python`. This grows `pip install -r requirements.txt` noticeably and takes the built executable from ~30MB to **~125MB** (measured on Windows). If you don't need OCR, you could remove `rapidocr-onnxruntime` from `requirements.txt` and drop it from the `collect_all(...)` loop in `pdf2md.spec` to keep the smaller build — the app runs fine without it; the checkbox just won't do anything useful.
+- **Windows/Linux only, for now.** Same caveat as the rest of the app — verified on Windows, expected but unverified on Linux, untested on macOS.
 
 ## Troubleshooting
 
@@ -187,8 +201,8 @@ Contributions are welcome! Please follow these steps:
 
 ## Roadmap
 
-- [ ] Dark/light theme toggle
-- [ ] OCR support for scanned PDFs
+- [x] Dark/light theme toggle
+- [x] OCR support for scanned PDFs (on-device, opt-in — Windows/Linux; macOS untested)
 - [ ] Batch export to ZIP
 - [ ] Markdown preview with syntax highlighting
 - [ ] Custom CSS styles for PDF-to-MD conversion
@@ -202,6 +216,7 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ## Acknowledgments
 
 - [PyMuPDF](https://github.com/pymupdf/PyMuPDF) — PDF text extraction
+- [RapidOCR](https://github.com/RapidAI/RapidOCR) — On-device OCR for scanned pages
 - [Flask](https://flask.palletsprojects.com/) — Backend web framework
 - [PyWebView](https://pywebview.flowrl.com/) — Native desktop window wrapper
 - [PyInstaller](https://pyinstaller.org/) — Executable packaging
