@@ -102,7 +102,9 @@
         flex-direction: column;
         align-items: center;
         text-align: center;
-        max-width: 420px;
+        max-width: 520px;
+        max-height: 100vh;
+        overflow-y: auto;
         padding: 0 32px;
         animation: splash-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -112,31 +114,131 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    .splash-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 16px;
-        background: var(--accent-tint);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 20px;
-    }
-
     .splash-title {
         font-family: var(--heading-font);
-        font-size: 32px;
+        font-size: 30px;
         font-weight: 600;
         letter-spacing: -0.01em;
         color: var(--text);
-        margin-bottom: 12px;
+        margin-bottom: 22px;
+    }
+
+    /* ---------- Splash diagram: PDF -> Markdown -> AI tools ---------- */
+
+    .splash-diagram {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        margin-bottom: 26px;
+    }
+
+    .diagram-flow { display: flex; align-items: center; justify-content: center; gap: 12px; }
+
+    .diagram-node {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        opacity: 0;
+        animation: diagram-pop 0.5s ease forwards;
+    }
+
+    .diagram-node:first-child { animation-delay: 0.1s; }
+    .diagram-node:last-child { animation-delay: 0.35s; }
+
+    @keyframes diagram-pop {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .diagram-node-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: var(--track);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text2);
+    }
+
+    .diagram-node.is-md .diagram-node-icon { background: var(--accent-tint); color: var(--accent); }
+    .diagram-node-label { font-size: 12px; font-weight: 600; color: var(--text2); }
+    .diagram-node.is-md .diagram-node-label { color: var(--accent); }
+
+    .diagram-arrow {
+        width: 52px;
+        height: 20px;
+        flex-shrink: 0;
+        opacity: 0;
+        animation: diagram-pop 0.4s ease forwards;
+        animation-delay: 0.25s;
+    }
+
+    .arrow-flow { animation: arrow-flow 1.4s linear infinite; }
+    @keyframes arrow-flow { to { stroke-dashoffset: -32; } }
+
+    .diagram-compare { display: flex; flex-direction: column; gap: 7px; width: 100%; max-width: 280px; }
+    .compare-row { display: flex; align-items: center; gap: 10px; }
+
+    .compare-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text2);
+        width: 66px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .compare-track { flex: 1; height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
+
+    .compare-fill {
+        height: 100%;
+        border-radius: 3px;
+        width: 0;
+        animation-fill-mode: forwards;
+        animation-duration: 0.9s;
+        animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .compare-fill.pdf { background: var(--text2); animation-name: fill-pdf; animation-delay: 0.3s; }
+    .compare-fill.md { background: var(--accent); animation-name: fill-md; animation-delay: 0.5s; }
+    @keyframes fill-pdf { to { width: 92%; } }
+    @keyframes fill-md { to { width: 26%; } }
+
+    .diagram-caption { font-size: 12px; color: var(--text2); font-weight: 500; }
+
+    .diagram-chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+    .chip {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--text2);
+        background: var(--track);
+        border: 1px solid var(--border);
+        padding: 5px 13px;
+        border-radius: 20px;
+        opacity: 0;
+        animation: chip-in 0.5s ease forwards;
+    }
+
+    .chip:nth-child(1) { animation-delay: 0.7s; }
+    .chip:nth-child(2) { animation-delay: 0.8s; }
+    .chip:nth-child(3) { animation-delay: 0.9s; }
+    .chip:nth-child(4) { animation-delay: 1.0s; }
+
+    @keyframes chip-in {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .splash-desc {
-        font-size: 14.5px;
+        font-size: 13.5px;
         line-height: 1.6;
         color: var(--text2);
-        margin-bottom: 28px;
+        margin-bottom: 26px;
     }
 
     .splash-btn {
@@ -555,11 +657,53 @@
 
 <div id="splash">
     <div class="splash-card">
-        <div class="splash-icon">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--accent)"><path d="M13 3H7.8C6.8 3 6 3.8 6 4.8v14.4c0 1 .8 1.8 1.8 1.8h8.4c1 0 1.8-.8 1.8-1.8V9l-5-6Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 3v5.2c0 .99.81 1.8 1.8 1.8H18" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
         <h1 class="splash-title">PDF2MD</h1>
-        <p class="splash-desc">Converts your PDF files into clean, well-structured Markdown &mdash; batch conversion, entirely on your machine. Nothing leaves your device.</p>
+
+        <div class="splash-diagram">
+            <div class="diagram-flow">
+                <div class="diagram-node">
+                    <div class="diagram-node-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 3H7.8C6.8 3 6 3.8 6 4.8v14.4c0 1 .8 1.8 1.8 1.8h8.4c1 0 1.8-.8 1.8-1.8V9l-5-6Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 3v5.2c0 .99.81 1.8 1.8 1.8H18" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <span class="diagram-node-label">PDF</span>
+                </div>
+                <div class="diagram-arrow">
+                    <svg width="52" height="20" viewBox="0 0 64 20" fill="none">
+                        <path d="M2 10h44" stroke="var(--border)" stroke-width="2" stroke-linecap="round"/>
+                        <path class="arrow-flow" d="M2 10h44" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 11"/>
+                        <path d="M40 3l10 7-10 7" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    </svg>
+                </div>
+                <div class="diagram-node is-md">
+                    <div class="diagram-node-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="3" width="14" height="18" rx="2" stroke-width="1.6"/><path d="M8 8h5M8 12h8M8 16h6" stroke-width="1.6" stroke-linecap="round"/></svg>
+                    </div>
+                    <span class="diagram-node-label">Markdown</span>
+                </div>
+            </div>
+
+            <div class="diagram-compare">
+                <div class="compare-row">
+                    <span class="compare-label">PDF</span>
+                    <div class="compare-track"><div class="compare-fill pdf"></div></div>
+                </div>
+                <div class="compare-row">
+                    <span class="compare-label">Markdown</span>
+                    <div class="compare-track"><div class="compare-fill md"></div></div>
+                </div>
+            </div>
+            <div class="diagram-caption">Same content. Far fewer tokens.</div>
+
+            <div class="diagram-chips">
+                <span class="chip">Claude</span>
+                <span class="chip">GPT</span>
+                <span class="chip">Gemini</span>
+                <span class="chip">Kimi</span>
+            </div>
+            <div class="diagram-caption">read Markdown natively &mdash; not PDF layout noise</div>
+        </div>
+
+        <p class="splash-desc">Free, reusable PDF &rarr; Markdown conversion for AI-assisted workflows &mdash; entirely on your machine. Nothing leaves your device.</p>
         <button class="splash-btn" id="proceedBtn" type="button">Proceed</button>
         <div class="splash-hint">Press Enter to continue</div>
     </div>
