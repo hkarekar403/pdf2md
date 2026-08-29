@@ -6,38 +6,34 @@
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platform">
 </p>
 
-A modern, cross-platform desktop application that converts PDF files to clean Markdown. Built with a vibrant gradient UI, drag-and-drop support, and native OS file dialogs for a seamless user experience.
+A cross-platform desktop application that converts PDF files to clean Markdown. Built with a restrained, two-theme UI, drag-and-drop support, and native OS file dialogs for a seamless user experience.
 
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Flask](https://img.shields.io/badge/flask-3.0%2B-lightgrey)
 ![PyMuPDF](https://img.shields.io/badge/PyMuPDF-1.28%2B-orange)
 ![PyWebView](https://img.shields.io/badge/pywebview-5.0%2B-green)
 
-## Screenshot
+## Screenshots
 
-> Add your app screenshot here
->
-> ```text
-> +--------------------------------------------------+
-> |  PDF to MD Converter                    _  _  _  |
-> |  Drag & Drop your PDF files here                |
-> |  [Drop Zone]                     [Browse Files]  |
-> +--------------------------------------------------+
-> |  File Queue                                      |
-> |  [PDF] report.pdf    12.4 MB  [====    ] Pending |
-> |  [PDF] guide.pdf     8.1 MB   [========] Done    |
-> +--------------------------------------------------+
-> |        [ Convert All ]    [ Clear Queue ]        |
-> +--------------------------------------------------+
-> ```
+<table>
+<tr>
+<td width="50%"><img src="screenshots/splash.png" alt="PDF2MD startup splash screen"><br><sub>Startup splash</sub></td>
+<td width="50%"><img src="screenshots/warm-theme.png" alt="PDF2MD in the Warm Editorial theme"><br><sub>Warm Editorial theme</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="screenshots/dark-theme.png" alt="PDF2MD in the Pro Dark theme with a completed conversion"><br><sub>Pro Dark theme</sub></td>
+<td width="50%"><img src="screenshots/exit-confirmation.png" alt="Exit confirmation dialog"><br><sub>Exit confirmation</sub></td>
+</tr>
+</table>
 
 ## Features
 
-- 🎨 **Modern Gradient UI** — Vibrant purple-to-blue design with smooth animations
 - 📄 **Drag & Drop Upload** — Intuitive file upload with visual feedback
 - ⚡ **Batch Conversion** — Convert multiple PDFs simultaneously with real-time progress tracking
+- 🌗 **Warm / Dark Themes** — Two considered themes, switchable in-app and remembered across launches
 - 🔁 **Smart Deduplication** — Prevents duplicate file uploads in the queue
-- 💾 **Native Save Dialog** — Choose any folder to save your Markdown files
+- 💾 **Native Save Dialog** — Choose any folder to save your Markdown files (falls back to a normal browser download outside the desktop shell)
+- 🚪 **Exit Confirmation** — Confirms before closing so you don't lose an in-progress queue
 - 🖥️ **Cross-Platform** — Native desktop app for Windows, macOS, and Linux
 - 📦 **Standalone Executable** — Package as a single distributable binary
 
@@ -128,7 +124,8 @@ pdf2md/
 ├── pdf2md.spec            # PyInstaller build configuration
 ├── requirements.txt       # Python dependencies
 ├── templates/
-│   └── index.html         # Modern gradient UI
+│   └── index.html         # Warm / Dark themed UI
+├── screenshots/           # README screenshots
 ├── uploads/               # Temporary PDF uploads (auto-created)
 ├── outputs/               # Converted Markdown files (auto-created)
 └── dist/                  # Built executables (generated)
@@ -142,7 +139,7 @@ pdf2md/
 | **PDF Processing** | PyMuPDF 1.28+ |
 | **Desktop Wrapper** | PyWebView 5.0+ |
 | **Packaging** | PyInstaller 6.0+ |
-| **Frontend** | HTML5, CSS3 (gradients, animations), vanilla JavaScript |
+| **Frontend** | HTML5, CSS3 (custom properties, animations), vanilla JavaScript |
 
 ## Configuration
 
