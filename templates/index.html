@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF2MD</title>
+<script>
+(function () {
+    try {
+        var saved = localStorage.getItem("pdf2md-theme");
+        var theme = saved || ((window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "warm");
+        document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {
+        document.documentElement.setAttribute("data-theme", "warm");
+    }
+})();
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&display=swap">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+        --bg: oklch(95.5% 0.012 80);
+        --surface: oklch(98% 0.009 80);
+        --text: oklch(23% 0.014 50);
+        --text2: oklch(47% 0.018 55);
+        --border: oklch(87% 0.014 70);
+        --accent: oklch(58% 0.12 40);
+        --accent-hover: oklch(52% 0.13 40);
+        --accent-tint: oklch(92% 0.03 45);
+        --accent-shadow: oklch(58% 0.12 40 / 0.32);
+        --accent-contrast: oklch(97% 0.01 80);
+        --success: oklch(56% 0.09 140);
+        --success-tint: oklch(56% 0.09 140 / 0.12);
+        --danger: oklch(52% 0.14 25);
+        --track: oklch(91% 0.012 75);
+        --row-hover: oklch(93.5% 0.014 70);
+        --panel-shadow: 0 1px 2px oklch(30% 0.02 50 / 0.06), 0 24px 44px -22px oklch(30% 0.05 50 / 0.22);
+        --panel-blur: none;
+        --heading-font: "Newsreader", Georgia, "Times New Roman", serif;
+        --size-font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    }
+
+    :root[data-theme="dark"] {
+        --bg: oklch(12% 0.006 260);
+        --surface: oklch(19% 0.008 260 / 0.92);
+        --text: oklch(96% 0.004 260);
+        --text2: oklch(64% 0.014 260);
+        --border: oklch(100% 0 0 / 0.08);
+        --accent: oklch(76% 0.13 195);
+        --accent-hover: oklch(80% 0.13 195);
+        --accent-tint: oklch(76% 0.13 195 / 0.12);
+        --accent-shadow: oklch(76% 0.13 195 / 0.4);
+        --accent-contrast: oklch(14% 0 0);
+        --success: oklch(74% 0.15 150);
+        --success-tint: oklch(74% 0.15 150 / 0.12);
+        --danger: oklch(70% 0.16 25);
+        --track: oklch(100% 0 0 / 0.07);
+        --row-hover: oklch(100% 0 0 / 0.035);
+        --panel-shadow: 0 30px 60px -24px oklch(0% 0 0 / 0.6);
+        --panel-blur: blur(20px);
+        --heading-font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        --size-font: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        transition: background 0.25s ease, color 0.25s ease;
+        overflow-x: hidden;
+    }
+
+    a { color: var(--accent); }
+    a:hover { color: var(--accent-hover); }
+
+    /* ---------- Splash ---------- */
+
+    #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        opacity: 1;
+        transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    #splash.hide {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .splash-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        max-width: 420px;
+        padding: 0 32px;
+        animation: splash-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes splash-rise {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .splash-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: var(--accent-tint);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .splash-title {
+        font-family: var(--heading-font);
+        font-size: 32px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--text);
+        margin-bottom: 12px;
+    }
+
+    .splash-desc {
+        font-size: 14.5px;
+        line-height: 1.6;
+        color: var(--text2);
+        margin-bottom: 28px;
+    }
+
+    .splash-btn {
+        padding: 13px 32px;
+        border-radius: 11px;
+        border: none;
+        background: var(--accent);
+        color: var(--accent-contrast);
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        box-shadow: 0 4px 14px -4px var(--accent-shadow);
+        transition: box-shadow 0.15s ease, transform 0.15s ease;
+    }
+
+    .splash-btn:hover { box-shadow: 0 8px 22px -6px var(--accent-shadow); transform: translateY(-1px); }
+    .splash-btn:active { transform: translateY(0); }
+
+    .splash-hint {
+        margin-top: 14px;
+        font-size: 12px;
+        color: var(--text2);
+        opacity: 0.7;
+    }
+
+    /* ---------- App shell ---------- */
+
+    #app {
+        opacity: 0;
+        transition: opacity 0.35s ease;
+    }
+
+    #app.show { opacity: 1; }
+    #app[hidden] { display: none; }
+
+    .page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 40px 24px;
+    }
+
+    .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--panel-shadow);
+        backdrop-filter: var(--panel-blur);
+        overflow: hidden;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 24px 32px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+    .brand-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        background: var(--accent-tint);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .brand-text h1 {
+        font-family: var(--heading-font);
+        font-size: 19px;
+        font-weight: 600;
+        color: var(--text);
+        letter-spacing: -0.01em;
+    }
+
+    .brand-text p {
+        font-family: var(--heading-font);
+        font-style: italic;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text2);
+        margin-top: 2px;
+    }
+
+    .theme-toggle {
+        display: flex;
+        gap: 2px;
+        padding: 3px;
+        background: var(--track);
+        border-radius: 10px;
+        flex-shrink: 0;
+    }
+
+    .theme-btn {
+        border: none;
+        background: transparent;
+        color: var(--text2);
+        font-size: 12px;
+        font-weight: 600;
+        font-family: inherit;
+        padding: 7px 13px;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .theme-btn.active {
+        background: var(--surface);
+        color: var(--accent);
+        box-shadow: 0 1px 3px oklch(0% 0 0 / 0.1);
+    }
+
+    .body { padding: 32px; display: flex; flex-direction: column; gap: 32px; }
+
+    .section-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text2);
+    }
+
+    .section { display: flex; flex-direction: column; gap: 12px; }
+
+    /* ---------- Drop zone ---------- */
+
+    .drop-zone {
+        border: 1.5px dashed var(--border);
+        border-radius: 14px;
+        padding: 36px 24px;
+        text-align: center;
+        background: var(--track);
+        cursor: pointer;
+        position: relative;
+        transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: var(--accent);
+        background: var(--accent-tint);
+    }
+
+    .drop-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .drop-zone svg { margin: 0 auto 12px; display: block; }
+
+    .drop-zone h3 {
+        font-family: var(--heading-font);
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 4px;
+    }
+
+    .drop-zone p { font-size: 13px; color: var(--text2); }
+
+    /* ---------- Queue ---------- */
+
+    .queue-header { display: flex; align-items: center; gap: 8px; }
+
+    .queue-count {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text2);
+        background: var(--track);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-family: var(--size-font);
+    }
+
+    .file-list { display: flex; flex-direction: column; }
+
+    .file-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 8px;
+        border-bottom: 1px solid var(--border);
+        border-radius: 8px;
+        transition: background 0.15s ease;
+    }
+
+    .file-row:last-child { border-bottom: none; }
+    .file-row:hover { background: var(--row-hover); }
+
+    .file-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        background: var(--track);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--text2);
+    }
+
+    .file-row[data-status="converting"] .file-icon,
+    .file-row[data-status="completed"] .file-icon {
+        background: var(--accent-tint);
+        color: var(--accent);
+    }
+
+    .file-row[data-status="completed"] .file-icon { color: var(--success); background: var(--success-tint); }
+
+    .file-info { flex: 1; min-width: 0; }
+
+    .file-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .file-size { font-size: 12px; color: var(--text2); margin-top: 1px; font-family: var(--size-font); }
+
+    .file-progress { flex: 0 0 96px; }
+
+    .progress-track { width: 100%; height: 4px; border-radius: 2px; background: var(--track); overflow: hidden; }
+
+    .progress-fill {
+        height: 100%;
+        width: 40%;
+        border-radius: 2px;
+        background: var(--accent);
+        animation: progress-sweep 1.4s ease-in-out infinite;
+    }
+
+    @keyframes progress-sweep {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(250%); }
+    }
+
+    .file-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text2);
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .file-status.is-converting { color: var(--accent); }
+    .file-status.is-completed { color: var(--success); }
+    .file-status.is-error { color: var(--danger); cursor: help; }
+
+    @keyframes icon-spin { to { transform: rotate(360deg); } }
+    .spin { animation: icon-spin 2.2s linear infinite; transform-origin: 12px 12px; }
+
+    .file-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+    .icon-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--text2);
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .icon-btn:hover { background: var(--row-hover); border-color: var(--accent); color: var(--accent); }
+
+    .empty-state {
+        text-align: center;
+        padding: 28px 20px;
+        color: var(--text2);
+    }
+
+    .empty-state svg { margin-bottom: 10px; opacity: 0.5; }
+    .empty-state p:first-of-type { font-weight: 600; font-size: 14px; color: var(--text); }
+    .empty-state p:last-of-type { font-size: 13px; margin-top: 4px; }
+
+    /* ---------- Actions ---------- */
+
+    .action-bar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+    }
+
+    .btn {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        margin-top: 8px;
+    }
+
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-ghost {
+        padding: 10px 16px;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text2);
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.15s ease;
+    }
+
+    .btn-ghost:hover:not(:disabled) { background: var(--row-hover); }
+
+    .btn-primary {
+        padding: 12px 28px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: var(--accent-contrast);
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px -4px var(--accent-shadow);
+        transition: box-shadow 0.15s ease, transform 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary:hover:not(:disabled) { box-shadow: 0 8px 20px -6px var(--accent-shadow); transform: translateY(-1px); }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+
+    /* ---------- Toast ---------- */
+
+    .toast {
+        position: fixed;
+        bottom: 32px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 12px 20px;
+        border-radius: 12px;
+        box-shadow: 0 12px 32px -8px oklch(0% 0 0 / 0.25);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text);
+        z-index: 1000;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .toast-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .toast.success .toast-icon { background: var(--success); }
+    .toast.error .toast-icon { background: var(--danger); }
+
+    @media (max-width: 640px) {
+        .page { padding: 24px 16px; }
+        .header { padding: 20px 24px; flex-wrap: wrap; }
+        .body { padding: 24px; }
+        .file-row { flex-wrap: wrap; }
+        .file-progress { flex: 1 1 100%; order: 5; }
+        .action-bar { flex-direction: column-reverse; align-items: stretch; }
+        .btn-primary, .btn-ghost { justify-content: center; }
+    }
+</style>
+</head>
+<body>
+
+<div id="splash">
+    <div class="splash-card">
+        <div class="splash-icon">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--accent)"><path d="M13 3H7.8C6.8 3 6 3.8 6 4.8v14.4c0 1 .8 1.8 1.8 1.8h8.4c1 0 1.8-.8 1.8-1.8V9l-5-6Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 3v5.2c0 .99.81 1.8 1.8 1.8H18" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h1 class="splash-title">PDF2MD</h1>
+        <p class="splash-desc">Converts your PDF files into clean, well-structured Markdown &mdash; batch conversion, entirely on your machine. Nothing leaves your device.</p>
+        <button class="splash-btn" id="proceedBtn" type="button">Proceed</button>
+        <div class="splash-hint">Press Enter to continue</div>
+    </div>
+</div>
+
+<div id="app" hidden>
+    <div class="page">
+        <div class="panel">
+
+            <div class="header">
+                <div class="brand">
+                    <div class="brand-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)"><path d="M13 3H7.8C6.8 3 6 3.8 6 4.8v14.4c0 1 .8 1.8 1.8 1.8h8.4c1 0 1.8-.8 1.8-1.8V9l-5-6Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 3v5.2c0 .99.81 1.8 1.8 1.8H18" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="brand-text">
+                        <h1>PDF2MD</h1>
+                        <p>Transform PDF documents into clean Markdown</p>
+                    </div>
+                </div>
+                <div class="theme-toggle" role="group" aria-label="Theme">
+                    <button type="button" class="theme-btn" data-theme-choice="warm">Warm</button>
+                    <button type="button" class="theme-btn" data-theme-choice="dark">Dark</button>
+                </div>
+            </div>
+
+            <div class="body">
+
+                <div class="section">
+                    <div class="section-label">Upload</div>
+                    <div class="drop-zone" id="dropZone">
+                        <input type="file" id="fileInput" accept=".pdf" multiple>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)"><path d="M7.5 16.5A4.5 4.5 0 0 1 6 7.64 5.5 5.5 0 0 1 16.4 6.9h.1a4 4 0 0 1 1.5 7.6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 20v-8.5M9 14l3-3 3 3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <h3>Drag &amp; drop PDF files here</h3>
+                        <p>or click to browse</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="queue-header">
+                        <div class="section-label">Queue</div>
+                        <div class="queue-count" id="queueCount">0</div>
+                    </div>
+                    <div class="file-list" id="fileQueue">
+                        <div class="empty-state">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 3H7.8C6.8 3 6 3.8 6 4.8v14.4c0 1 .8 1.8 1.8 1.8h8.4c1 0 1.8-.8 1.8-1.8V9l-5-6Z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 3v5.2c0 .99.81 1.8 1.8 1.8H18" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <p>No files in queue</p>
+                            <p>Upload PDF files to get started</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-ghost" id="clearQueueBtn" type="button" disabled>Clear Queue</button>
+                    <button class="btn btn-primary" id="convertAllBtn" type="button" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" id="convertIcon"><path d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66" stroke-width="1.8" stroke-linecap="round"/><path d="M17 3v4h-4M7 21v-4h4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span id="convertLabel">Convert All</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast">
+    <div class="toast-icon" id="toastIcon">&check;</div>
+    <span id="toastText">Success</span>
+</div>
+
+<script>
+    // ---------- Theme ----------
+
+    function setTheme(theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+        try { localStorage.setItem("pdf2md-theme", theme); } catch (e) {}
+        document.querySelectorAll(".theme-btn").forEach(function (b) {
+            b.classList.toggle("active", b.dataset.themeChoice === theme);
+        });
+    }
+
+    document.querySelectorAll(".theme-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () { setTheme(btn.dataset.themeChoice); });
+    });
+    setTheme(document.documentElement.getAttribute("data-theme") || "warm");
+
+    // ---------- Splash ----------
+
+    function proceedToApp() {
+        var splash = document.getElementById("splash");
+        var app = document.getElementById("app");
+        if (splash.classList.contains("hide")) return;
+        splash.classList.add("hide");
+        setTimeout(function () {
+            splash.remove();
+            app.hidden = false;
+            requestAnimationFrame(function () { app.classList.add("show"); });
+        }, 400);
+    }
+
+    document.getElementById("proceedBtn").addEventListener("click", proceedToApp);
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && document.getElementById("splash")) proceedToApp();
+    });
+
+    // ---------- App logic ----------
+
+    let files = [];
+    let jobId = null;
+    let submitted = false;
+
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(function (name) {
+        dropZone.addEventListener(name, function (e) { e.preventDefault(); e.stopPropagation(); }, false);
+    });
+    ["dragenter", "dragover"].forEach(function (name) {
+        dropZone.addEventListener(name, function () { dropZone.classList.add("dragover"); }, false);
+    });
+    ["dragleave", "drop"].forEach(function (name) {
+        dropZone.addEventListener(name, function () { dropZone.classList.remove("dragover"); }, false);
+    });
+    dropZone.addEventListener("drop", function (e) { handleFiles({ target: { files: e.dataTransfer.files } }); }, false);
+    fileInput.addEventListener("change", handleFiles, false);
+
+    function handleFiles(e) {
+        const newFiles = Array.from(e.target.files).filter(function (f) { return f.name.toLowerCase().endsWith(".pdf"); });
+        if (newFiles.length === 0) {
+            showToast("Please select valid PDF files", "error");
+            return;
+        }
+        const duplicates = [];
+        const uniqueNewFiles = [];
+        newFiles.forEach(function (f) {
+            if (files.some(function (existing) { return existing.name === f.name; })) {
+                duplicates.push(f.name);
+            } else {
+                uniqueNewFiles.push(f);
+            }
+        });
+        if (duplicates.length > 0) showToast("Duplicate files skipped: " + duplicates.join(", "), "error");
+        files = files.concat(uniqueNewFiles);
+        updateQueue();
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function iconDoc(color) {
+        return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + color + '"><path d="M13 3H7.8C6.8 3 6 3.8 6 4.8v14.4c0 1 .8 1.8 1.8 1.8h8.4c1 0 1.8-.8 1.8-1.8V9l-5-6Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 3v5.2c0 .99.81 1.8 1.8 1.8H18" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+
+    function updateQueue() {
+        const queue = document.getElementById("fileQueue");
+        const count = document.getElementById("queueCount");
+        const convertBtn = document.getElementById("convertAllBtn");
+        const clearBtn = document.getElementById("clearQueueBtn");
+
+        count.textContent = files.length;
+        convertBtn.disabled = files.length === 0;
+        clearBtn.disabled = files.length === 0;
+
+        if (files.length === 0) {
+            queue.innerHTML = '<div class="empty-state">' +
+                '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 3H7.8C6.8 3 6 3.8 6 4.8v14.4c0 1 .8 1.8 1.8 1.8h8.4c1 0 1.8-.8 1.8-1.8V9l-5-6Z" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 3v5.2c0 .99.81 1.8 1.8 1.8H18" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                "<p>No files in queue</p><p>Upload PDF files to get started</p></div>";
+            return;
+        }
+
+        queue.innerHTML = files.map(function (file, index) {
+            return '<div class="file-row" id="file-' + index + '" data-status="pending">' +
+                '<div class="file-icon">' + iconDoc("currentColor") + "</div>" +
+                '<div class="file-info">' +
+                    '<div class="file-name" title="' + escapeHtml(file.name) + '">' + escapeHtml(file.name) + "</div>" +
+                    '<div class="file-size">' + formatSize(file.size) + "</div>" +
+                "</div>" +
+                '<div class="file-progress" id="progress-wrap-' + index + '" hidden><div class="progress-track"><div class="progress-fill"></div></div></div>' +
+                '<div class="file-status" id="status-' + index + '">' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5" stroke-width="1.6"/><path d="M12 7.5V12l3 2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                    "<span>Queued</span>" +
+                "</div>" +
+                '<div class="file-actions" id="actions-' + index + '">' +
+                    '<button class="icon-btn" data-action="remove" data-index="' + index + '" title="Remove">' +
+                        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6L6 18" stroke-width="1.6" stroke-linecap="round"/></svg>' +
+                    "</button>" +
+                "</div>" +
+            "</div>";
+        }).join("");
+    }
+
+    function removeFile(index) {
+        if (!submitted) {
+            files.splice(index, 1);
+            updateQueue();
+        } else {
+            const row = document.getElementById("file-" + index);
+            if (row) row.style.display = "none";
+        }
+    }
+
+    function clearQueue() {
+        files = [];
+        jobId = null;
+        submitted = false;
+        updateQueue();
+        showToast("Queue cleared", "success");
+    }
+    document.getElementById("clearQueueBtn").addEventListener("click", clearQueue);
+
+    function formatSize(bytes) {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    }
+
+    async function convertAll() {
+        if (files.length === 0) return;
+        const formData = new FormData();
+        files.forEach(function (file) { formData.append("files[]", file); });
+
+        const convertBtn = document.getElementById("convertAllBtn");
+        const convertLabel = document.getElementById("convertLabel");
+        const clearBtn = document.getElementById("clearQueueBtn");
+        convertBtn.disabled = true;
+        clearBtn.disabled = true;
+        convertLabel.textContent = "Converting…";
+
+        try {
+            const response = await fetch("/upload", { method: "POST", body: formData });
+            if (!response.ok) throw new Error("Upload failed");
+            const data = await response.json();
+            jobId = data.job_id;
+            submitted = true;
+            files.forEach(function (_, index) {
+                const actions = document.getElementById("actions-" + index);
+                if (actions) actions.innerHTML = "";
+            });
+            pollStatus();
+        } catch (error) {
+            showToast(error.message, "error");
+            convertBtn.disabled = false;
+            clearBtn.disabled = false;
+            convertLabel.textContent = "Convert All";
+        }
+    }
+    document.getElementById("convertAllBtn").addEventListener("click", convertAll);
+
+    function applyStatus(index, status, errorMsg, mdPath) {
+        const row = document.getElementById("file-" + index);
+        if (!row || row.dataset.status === status) return;
+        row.dataset.status = status;
+        const statusEl = document.getElementById("status-" + index);
+        const actionsEl = document.getElementById("actions-" + index);
+        const progressWrap = document.getElementById("progress-wrap-" + index);
+        if (!statusEl || !actionsEl) return;
+
+        if (status === "converting") {
+            statusEl.className = "file-status is-converting";
+            statusEl.innerHTML = '<svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="26 44"/></svg><span>Converting</span>';
+            actionsEl.innerHTML = "";
+            if (progressWrap) progressWrap.hidden = false;
+        } else if (status === "completed") {
+            statusEl.className = "file-status is-completed";
+            statusEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5" stroke-width="1.6"/><path d="M8.3 12.3l2.6 2.6 4.8-5.4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Completed</span>';
+            row.dataset.mdPath = mdPath || "";
+            actionsEl.innerHTML =
+                '<button class="icon-btn" data-action="download" title="Download">' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4.5v10" stroke-width="1.6" stroke-linecap="round"/><path d="M8 11l4 4 4-4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 18.5h13" stroke-width="1.6" stroke-linecap="round"/></svg>' +
+                "</button>" +
+                '<button class="icon-btn" data-action="remove" data-index="' + index + '" title="Dismiss">' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6L6 18" stroke-width="1.6" stroke-linecap="round"/></svg>' +
+                "</button>";
+            if (progressWrap) progressWrap.hidden = true;
+        } else if (status === "error") {
+            statusEl.className = "file-status is-error";
+            statusEl.title = errorMsg || "Conversion failed";
+            statusEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="8.5" stroke-width="1.6"/><path d="M12 7.5v5.5" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.3" r="0.9" fill="currentColor" stroke="none"/></svg><span>Failed</span>';
+            actionsEl.innerHTML =
+                '<button class="icon-btn" data-action="remove" data-index="' + index + '" title="Dismiss">' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6L6 18" stroke-width="1.6" stroke-linecap="round"/></svg>' +
+                "</button>";
+            if (progressWrap) progressWrap.hidden = true;
+        }
+    }
+
+    async function pollStatus() {
+        if (!jobId) return;
+        try {
+            const response = await fetch("/status/" + jobId);
+            const data = await response.json();
+
+            if (data.files && data.files.length > 0) {
+                let allDone = true;
+                data.files.forEach(function (file, index) {
+                    applyStatus(index, file.status, file.error, file.md_path);
+                    if (file.status !== "completed" && file.status !== "error") allDone = false;
+                });
+
+                if (allDone) {
+                    const hasError = data.files.some(function (f) { return f.status === "error"; });
+                    showToast(hasError ? "Some conversions failed" : "All conversions completed!", hasError ? "error" : "success");
+                    const convertBtn = document.getElementById("convertAllBtn");
+                    const clearBtn = document.getElementById("clearQueueBtn");
+                    const convertLabel = document.getElementById("convertLabel");
+                    convertBtn.disabled = false;
+                    clearBtn.disabled = false;
+                    convertLabel.textContent = "Convert All";
+                    return;
+                }
+                setTimeout(pollStatus, 500);
+            } else {
+                setTimeout(pollStatus, 500);
+            }
+        } catch (error) {
+            setTimeout(pollStatus, 2000);
+        }
+    }
+
+    async function downloadFile(path) {
+        try {
+            const response = await fetch("/api/download?filename=" + encodeURIComponent(path));
+            if (!response.ok) {
+                showToast("Download failed", "error");
+                return;
+            }
+            const blob = await response.blob();
+            const downloadName = path.split(/[\\/]/).pop();
+
+            if (!(window.pywebview && window.pywebview.api && window.pywebview.api.save_file)) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = downloadName;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(url);
+                showToast("Downloaded", "success");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = async function () {
+                const base64 = reader.result.split(",")[1];
+                try {
+                    const result = await window.pywebview.api.save_file(base64, downloadName);
+                    if (result && result.success) {
+                        showToast("Saved successfully", "success");
+                    } else {
+                        showToast(result ? result.error : "Save cancelled", "error");
+                    }
+                } catch (e) {
+                    showToast("Save dialog error", "error");
+                }
+            };
+            reader.readAsDataURL(blob);
+        } catch (error) {
+            showToast("Download failed: " + error.message, "error");
+        }
+    }
+
+    document.addEventListener("click", function (e) {
+        const downloadBtn = e.target.closest('[data-action="download"]');
+        if (downloadBtn) {
+            const row = downloadBtn.closest(".file-row");
+            if (row && row.dataset.mdPath) downloadFile(row.dataset.mdPath);
+            return;
+        }
+        const removeBtn = e.target.closest('[data-action="remove"]');
+        if (removeBtn) removeFile(Number(removeBtn.dataset.index));
+    });
+
+    function showToast(message, type) {
+        type = type || "success";
+        const toast = document.getElementById("toast");
+        const toastText = document.getElementById("toastText");
+        const toastIcon = document.getElementById("toastIcon");
+        toast.className = "toast " + type;
+        toastText.textContent = message;
+        toastIcon.innerHTML = type === "success" ? "&check;" : "&times;";
+        toast.classList.add("show");
+        setTimeout(function () { toast.classList.remove("show"); }, 3000);
+    }
+</script>
+</body>
+</html>
