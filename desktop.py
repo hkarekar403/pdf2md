@@ -38,10 +38,10 @@ if __name__ == "__main__":
     window = webview.create_window(
         title="PDF to MD Converter",
         url="http://127.0.0.1:5000",
-        width=1100,
-        height=780,
+        width=1040,
+        height=720,
         resizable=True,
-        min_size=(900, 600),
+        min_size=(760, 520),
         text_select=True,
         background_color="#f5f7fa",
         js_api=api,
