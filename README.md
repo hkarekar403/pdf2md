@@ -173,6 +173,11 @@ The actual conversion happens in the `outputs/` folder, but when you click **Dow
 
 PyMuPDF only extracts text that already exists in the PDF's text layer. A scanned document — a page that's really just a photo of text, with no underlying text layer — has none, so by default it converts to nothing.
 
+<p align="center">
+  <img src="screenshots/final.png" alt="The OCR scanned pages toggle in the converter's footer" width="640">
+  <br><sub>The <b>OCR scanned pages</b> toggle, alongside the queue controls</sub>
+</p>
+
 Check **"OCR scanned pages"** before converting to fix that. When enabled, any page with images but *no* extractable text is rendered to an image and run through [RapidOCR](https://github.com/RapidAI/RapidOCR) (ONNX Runtime, on-device — no cloud, no API key, nothing leaves your machine). Pages that already have real text are left alone; embedded images that appear alongside real text are marked as `*[image]*` in the output rather than silently dropped, whether or not OCR is on.
 
 Trade-offs worth knowing before you flip it on:
