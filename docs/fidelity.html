@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What PDF2MD Preserves</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+  :root {
+    --ground: #f2f4f6;
+    --surface: #ffffff;
+    --sunk: #e8ecf0;
+    --ink: #16202b;
+    --muted: #5c6b7a;
+    --faint: #8a97a4;
+    --rule: #d3dae1;
+    --accent: #1f4e79;
+    --keep: #1e6e4f;
+    --keep-bg: #e6f1eb;
+    --near: #8a5a00;
+    --near-bg: #f6eedd;
+    --lost: #9b2c2c;
+    --lost-bg: #f6e6e6;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, Segoe UI, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #10161c;
+      --surface: #18212a;
+      --sunk: #1e2833;
+      --ink: #e4eaf0;
+      --muted: #9aa9b8;
+      --faint: #6f7f8e;
+      --rule: #2b3742;
+      --accent: #7fb0dd;
+      --keep: #56c191;
+      --keep-bg: #16302568;
+      --near: #dba94b;
+      --near-bg: #35291068;
+      --lost: #e58a8a;
+      --lost-bg: #34191968;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #10161c;
+    --surface: #18212a;
+    --sunk: #1e2833;
+    --ink: #e4eaf0;
+    --muted: #9aa9b8;
+    --faint: #6f7f8e;
+    --rule: #2b3742;
+    --accent: #7fb0dd;
+    --keep: #56c191;
+    --keep-bg: #16302568;
+    --near: #dba94b;
+    --near-bg: #35291068;
+    --lost: #e58a8a;
+    --lost-bg: #34191968;
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 812px;
+    margin: 0 auto;
+    padding: 56px 28px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+  h1, h2, h3, .label, .chip, th, .stat b { font-family: var(--sans); }
+  h1 {
+    font-size: clamp(30px, 5.2vw, 42px);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.022em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h2 {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+  p { margin: 0 0 14px; }
+  p:last-child { margin-bottom: 0; }
+  a { color: var(--accent); }
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  code, .mono { font-family: var(--mono); font-size: 0.88em; }
+  code {
+    background: var(--sunk);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* header */
+  header { display: flex; flex-direction: column; gap: 18px; }
+  .lede {
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0;
+  }
+  .basis {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+    border-top: 1px solid var(--rule);
+    padding-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+  }
+
+  /* section shell */
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .intro { color: var(--muted); max-width: 64ch; }
+
+  /* the three-state rail */
+  .rows { display: flex; flex-direction: column; gap: 2px; }
+  .row {
+    display: grid;
+    grid-template-columns: 176px 1fr;
+    gap: 4px 26px;
+    background: var(--surface);
+    border-left: 3px solid var(--st);
+    padding: 16px 20px;
+  }
+  .row.keep { --st: var(--keep); }
+  .row.near { --st: var(--near); }
+  .row.lost { --st: var(--lost); }
+  .row h3 { color: var(--st); }
+  .row p { font-size: 15.5px; color: var(--ink); margin: 0; }
+  .row .note {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 7px;
+  }
+  @media (max-width: 620px) {
+    .row { grid-template-columns: 1fr; gap: 8px; }
+  }
+
+  /* summary triptych */
+  .verdict {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+  }
+  .vcol {
+    background: var(--surface);
+    padding: 18px 18px 20px;
+    border-top: 3px solid var(--st);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .vcol.keep { --st: var(--keep); }
+  .vcol.near { --st: var(--near); }
+  .vcol.lost { --st: var(--lost); }
+  .vcol .label { color: var(--st); letter-spacing: 0.1em; }
+  .vcol ul { margin: 0; padding-left: 17px; font-size: 14.5px; line-height: 1.5; }
+  .vcol li { margin-bottom: 5px; }
+  @media (max-width: 620px) { .verdict { grid-template-columns: 1fr; } }
+
+  /* fit / misfit */
+  .fit { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .fit > div { background: var(--surface); padding: 18px 20px; }
+  .fit ul { margin: 10px 0 0; padding-left: 17px; font-size: 15px; }
+  .fit li { margin-bottom: 6px; }
+  @media (max-width: 620px) { .fit { grid-template-columns: 1fr; } }
+
+  /* evidence table */
+  .scroll { overflow-x: auto; background: var(--surface); }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    min-width: 520px;
+  }
+  th, td { text-align: right; padding: 9px 16px; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.k { color: var(--keep); }
+  td.l { color: var(--lost); }
+
+  /* checklist */
+  ol.check {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: c;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  ol.check li {
+    counter-increment: c;
+    background: var(--surface);
+    padding: 15px 20px 15px 54px;
+    position: relative;
+    font-size: 15.5px;
+  }
+  ol.check li::before {
+    content: counter(c);
+    position: absolute;
+    left: 20px;
+    top: 15px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  ol.check b { font-family: var(--sans); font-weight: 600; }
+
+  .caveat {
+    background: var(--sunk);
+    border-left: 3px solid var(--accent);
+    padding: 20px 24px;
+    font-size: 15.5px;
+  }
+  .caveat p { max-width: 64ch; }
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="label">PDF2MD — conversion fidelity</div>
+    <h1>What PDF2MD Preserves</h1>
+    <p class="lede">The converter reads a PDF's text, type sizes and page geometry to rebuild structure. It is very good at words, code and tables, and it cannot see pictures at all. This page sets out where the line falls, so you know what to check before trusting a conversion.</p>
+    <div class="basis">
+      <span>measured on 1,191 pages</span>
+      <span>2 technical manuals</span>
+      <span>build b5e62f5</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>At a glance</h2>
+    <div class="verdict">
+      <div class="vcol keep">
+        <div class="label">Preserved</div>
+        <ul>
+          <li>Body text, essentially in full</li>
+          <li>Code listings, with indentation</li>
+          <li>Tables, including unruled ones</li>
+          <li>Bold emphasis</li>
+          <li>Reading order, single column</li>
+        </ul>
+      </div>
+      <div class="vcol near">
+        <div class="label">Approximate</div>
+        <ul>
+          <li>Heading levels</li>
+          <li>Tables split across pages</li>
+          <li>Nested list indentation</li>
+          <li>Multi-column reading order</li>
+        </ul>
+      </div>
+      <div class="vcol lost">
+        <div class="label">Not carried over</div>
+        <ul>
+          <li>Diagrams and charts</li>
+          <li>Images</li>
+          <li>Links and cross-references</li>
+          <li>Maths and equations</li>
+          <li>Merged table cells</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Is your document a good fit?</h2>
+    <div class="fit">
+      <div>
+        <h3>Works well</h3>
+        <ul>
+          <li>Text-based PDFs exported from a word processor or typesetter</li>
+          <li>Technical manuals, references, specifications</li>
+          <li>Documents whose value is in the prose, code and tables</li>
+          <li>Single-column layouts</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Expect to lose a lot</h3>
+        <ul>
+          <li>Anything where diagrams carry the meaning</li>
+          <li>Slide decks, brochures, infographics</li>
+          <li>Scanned paper, unless you switch OCR on</li>
+          <li>Forms, invoices and receipts with boxed layouts</li>
+          <li>Two-column academic papers</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What it preserves</h2>
+    <p class="intro">Each of these was measured against the source PDF rather than eyeballed, by comparing every word in the output with every word the PDF actually contains.</p>
+    <div class="rows">
+      <div class="row keep">
+        <h3>Body text</h3>
+        <div>
+          <p>Effectively everything. Across two manuals, 25 and 2 words respectively went missing out of roughly 129,000 each.</p>
+          <p class="note">99.98% and 99.998% of words retained</p>
+        </div>
+      </div>
+      <div class="row keep">
+        <h3>Code listings</h3>
+        <div>
+          <p>Monospaced blocks become fenced code, keeping line breaks, blank lines and indentation. PDFs store no leading spaces, so indentation is rebuilt from each character's position on the page.</p>
+          <p class="note">1,835 listings fenced · 0 flattened</p>
+        </div>
+      </div>
+      <div class="row keep">
+        <h3>Tables</h3>
+        <div>
+          <p>Columns are found by geometry, so tables aligned with plain whitespace are recovered as well as ruled ones. Cells that wrap over several lines are joined back together.</p>
+          <p class="note">268 tables rebuilt as Markdown</p>
+        </div>
+      </div>
+      <div class="row keep">
+        <h3>Speed, and privacy</h3>
+        <div>
+          <p>A 553-page manual converts in about 1.6 seconds. Nothing leaves your machine — there is no upload, no API call and no account, and OCR runs on-device too.</p>
+          <p class="note">~350 pages/second · fully offline</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What is approximate</h2>
+    <p class="intro">These come out usable but imperfect. The content is there; the structure around it is a best guess.</p>
+    <div class="rows">
+      <div class="row near">
+        <h3>Heading levels</h3>
+        <div>
+          <p>Headings are inferred from type size relative to the page average, not from any real structure in the file — PDFs rarely carry one. A document that sets everything in one size gets no headings at all, and levels can be uneven between sections.</p>
+          <p class="note">one manual yielded 30 / 6 / 285 across H1–H3, the other 335 / 1043 / 806</p>
+        </div>
+      </div>
+      <div class="row near">
+        <h3>Tables across a page break</h3>
+        <div>
+          <p>A table continuing onto the next page is emitted as two separate tables. Because Markdown requires a header row, the second piece promotes its first row of data into the header.</p>
+        </div>
+      </div>
+      <div class="row near">
+        <h3>Nested lists</h3>
+        <div>
+          <p>List items survive as text and usually still render as a list, but indentation levels are flattened — sub-points lettered <code>a.</code> and <code>b.</code> come out at the same level as the numbered points above them.</p>
+        </div>
+      </div>
+      <div class="row near">
+        <h3>Multi-column pages</h3>
+        <div>
+          <p>Text is read in the order the PDF stores it. On a two-column page that order may interleave the columns, so the words are all present but the sentences can be shuffled. This is the one failure that is easy to miss, because nothing looks obviously broken.</p>
+        </div>
+      </div>
+      <div class="row near">
+        <h3>Running heads and page numbers</h3>
+        <div>
+          <p>Repeated page furniture is content as far as the converter is concerned, so chapter titles, part numbers and stray page numbers appear inline throughout the output.</p>
+          <p class="note">275 running-head lines in a 553-page manual</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What is not carried over</h2>
+    <p class="intro">These are absent from the Markdown entirely. Nothing warns you, which makes this the section worth reading twice.</p>
+    <div class="rows">
+      <div class="row lost">
+        <h3>Diagrams and charts</h3>
+        <div>
+          <p>The biggest single loss. Figures drawn as vector artwork — flowcharts, memory layouts, architecture diagrams — leave no trace at all, not even a placeholder. Their captions and any surrounding text remain, so a caption reading "Figure 4-1" may be followed by nothing.</p>
+          <p class="note">584 of 1,191 pages carried vector artwork — 49% of the corpus</p>
+        </div>
+      </div>
+      <div class="row lost">
+        <h3>Images</h3>
+        <div>
+          <p>Photographs and other embedded pictures are marked <code>*[image]*</code> in place. The marker tells you something was there; the picture itself is not extracted or saved.</p>
+        </div>
+      </div>
+      <div class="row lost">
+        <h3>Links and cross-references</h3>
+        <div>
+          <p>Hyperlinks become plain text, and internal references such as "see Section 12" keep their wording but lose any ability to navigate.</p>
+        </div>
+      </div>
+      <div class="row lost">
+        <h3>Merged and spanning cells</h3>
+        <div>
+          <p>Markdown tables have no way to express a cell spanning several rows or columns, so such tables are approximated with the content redistributed into a plain grid.</p>
+        </div>
+      </div>
+      <div class="row lost">
+        <h3>Equations, and scanned pages</h3>
+        <div>
+          <p>Mathematical notation is not reconstructed. Pages that are pure images of text produce nothing at all unless you tick <b>OCR scanned pages</b>, which reads them on-device at a cost of a few seconds per page. OCR only runs on pages with no extractable text whatsoever — a page mixing real text with a scanned figure is left alone.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Checking your own conversion</h2>
+    <p class="intro">Five minutes with the output will tell you most of what you need to know.</p>
+    <ol class="check">
+      <li><b>Compare the length.</b> If the Markdown is far shorter than the PDF felt, the document is probably scanned. Re-run it with OCR enabled.</li>
+      <li><b>Search for orphaned captions.</b> Look for "Figure" or "Diagram" in the output. Each one you find marks a picture that is now missing, and tells you how much the document relied on them.</li>
+      <li><b>Count the headings.</b> No <code>#</code> headings at all means the source used a single type size, and you will need to add structure by hand.</li>
+      <li><b>Spot-check a long table.</b> Find one that ran over a page break in the original and confirm both halves are present and correctly aligned.</li>
+      <li><b>Read one paragraph from a busy page.</b> If a sentence stops making sense halfway through, the page was probably multi-column and the reading order interleaved.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>The measurements behind this</h2>
+    <p class="intro">Every figure on this page comes from these two documents, converted with the current build and compared word-for-word against the source.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Measure</th>
+            <th>Programmer's Guide</th>
+            <th>Reference Manual</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Pages</td><td>553</td><td>638</td></tr>
+          <tr><td>Conversion time</td><td>1.6 s</td><td>1.4 s</td></tr>
+          <tr><td>Words in source</td><td>129,661</td><td>128,354</td></tr>
+          <tr><td class="k">Words missing from output</td><td class="k">25</td><td class="k">2</td></tr>
+          <tr><td class="k">Code listings fenced</td><td class="k">790</td><td class="k">1,045</td></tr>
+          <tr><td class="k">Tables rebuilt</td><td class="k">132</td><td class="k">136</td></tr>
+          <tr><td>Document set in monospace</td><td>22.1%</td><td>10.0%</td></tr>
+          <tr><td class="l">Pages with vector artwork</td><td class="l">172</td><td class="l">412</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>How far to trust these numbers</h2>
+    <div class="caveat">
+      <p>Everything here was measured on two documents of a single kind: HPE TAL programming manuals, typeset in 1993, single-column, heavy with code and reference tables. They are a demanding test for text and tables and a very forgiving one for layout.</p>
+      <p>Nothing on this page has been verified against modern PDFs, two-column academic papers, forms, invoices, presentation decks, right-to-left scripts or CJK text. The tool will still convert them; the accuracy figures above simply do not extend that far, and the layout limitations are likely to bite harder than they did here.</p>
+    </div>
+  </section>
+
+  <footer>PDF2MD · fidelity reference · figures measured against build b5e62f5</footer>
+
+</div>
+</body>
+</html>

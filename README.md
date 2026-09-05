@@ -1,12 +1,17 @@
 # PDF to MD Converter
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.1.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20(macOS%20pending)-lightgrey" alt="Platform">
 </p>
 
 A cross-platform desktop application that converts PDF files to clean Markdown. Built with a restrained, two-theme UI, drag-and-drop support, and native OS file dialogs for a seamless user experience.
+
+> **Before you convert anything important, read [What PDF2MD Preserves](LIMITATIONS.md).**
+> It sets out what survives a conversion intact, what comes out approximate, and what is
+> dropped without warning — diagrams above all — along with the measurements behind each
+> claim and a five-minute checklist for auditing your own output.
 
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Flask](https://img.shields.io/badge/flask-3.0%2B-lightgrey)
@@ -31,6 +36,8 @@ A cross-platform desktop application that converts PDF files to clean Markdown. 
 - 📄 **Drag & Drop Upload** — Intuitive file upload with visual feedback
 - ⚡ **Batch Conversion** — Convert multiple PDFs simultaneously with real-time progress tracking
 - 🌗 **Warm / Dark Themes** — Two considered themes, switchable in-app and remembered across launches
+- 💻 **Code Blocks Preserved** — Monospaced listings become fenced code with their line breaks and indentation intact, instead of being reflowed into a paragraph
+- 📊 **Tables Rebuilt** — Columns are recovered from page geometry, so whitespace-aligned tables become real Markdown tables, not a run of words
 - 🔍 **Optional OCR** — On-device text recognition for scanned pages with no text layer, so they don't convert to nothing (see [OCR Support](#ocr-support))
 - 🖼️ **Visible Image Markers** — Images that can't be represented in Markdown are marked in the output instead of silently disappearing
 - 🔁 **Smart Deduplication** — Prevents duplicate file uploads in the queue
@@ -122,6 +129,10 @@ pdf2md/
 ├── desktop.py             # Desktop app entry point (PyWebView wrapper)
 ├── pdf2md.spec            # PyInstaller build configuration
 ├── requirements.txt       # Python dependencies
+├── LIMITATIONS.md         # What the tool preserves, approximates and drops
+├── CHANGELOG.md           # Release history
+├── docs/
+│   └── fidelity.html      # Styled version of LIMITATIONS.md
 ├── templates/
 │   └── index.html         # Warm / Dark themed UI
 ├── assets/                # App icon (.ico / .png)
@@ -203,11 +214,21 @@ Contributions are welcome! Please follow these steps:
 
 - [x] Dark/light theme toggle
 - [x] OCR support for scanned PDFs (on-device, opt-in — Windows/Linux; macOS untested)
+- [x] Preserve code listings as fenced blocks
+- [x] Rebuild tables as Markdown tables
+- [ ] Per-conversion quality report (what was preserved, what was lost)
+- [ ] Rejoin tables split across a page break
+- [ ] Extract embedded images alongside the Markdown
 - [ ] Batch export to ZIP
 - [ ] Markdown preview with syntax highlighting
 - [ ] Custom CSS styles for PDF-to-MD conversion
 - [ ] Progress persistence across app restarts
 - [ ] Plugin system for custom converters
+
+## Changelog
+
+Release history is in [CHANGELOG.md](CHANGELOG.md). The current release is **v1.1.0**, which
+adds fenced code blocks and Markdown table reconstruction.
 
 ## License
 
